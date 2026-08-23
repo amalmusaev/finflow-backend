@@ -1,5 +1,4 @@
 from collections.abc import AsyncGenerator
-from pathlib import Path
 
 from sqlalchemy.ext.asyncio import (
     AsyncAttrs,
@@ -11,17 +10,12 @@ from sqlalchemy.orm import DeclarativeBase
 
 from src.core.config import settings
 
-# Гарантируем существование директории для локальной базы данных SQLite
-if "sqlite" in settings.database_url:
-    db_path = settings.database_url.split("///")[-1]
-    if db_path and not db_path.startswith(":memory:"):
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-
-# Создание асинхронного движка SQLAlchemy
+# Создание асинхронного движка SQLAlchemy для PostgreSQL
 engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
     future=True,
+    pool_pre_ping=True,
 )
 
 # Фабрика асинхронных сессий

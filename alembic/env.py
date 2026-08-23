@@ -1,6 +1,5 @@
 import asyncio
 from logging.config import fileConfig
-from pathlib import Path
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -26,13 +25,12 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
-    url = config.get_main_option("sqlalchemy.url") or settings.database_url
+    url = settings.database_url
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        render_as_batch=True,  # Важно для SQLite при изменении схемы
     )
 
     with context.begin_transaction():
@@ -43,7 +41,6 @@ def do_run_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        render_as_batch=True,  # Важно для SQLite при изменении схемы
     )
 
     with context.begin_transaction():
@@ -54,11 +51,6 @@ async def run_async_migrations() -> None:
     """In this scenario we need to create an Engine
     and associate a connection with the context.
     """
-    if "sqlite" in settings.database_url:
-        db_path = settings.database_url.split("///")[-1]
-        if db_path and not db_path.startswith(":memory:"):
-            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = settings.database_url
 

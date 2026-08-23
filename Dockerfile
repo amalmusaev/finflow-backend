@@ -19,8 +19,6 @@ COPY alembic.ini ./
 COPY alembic ./alembic
 COPY src ./src
 
-# Создание директории для базы данных SQLite
-RUN mkdir -p /app/database
 
 # Порт бэкенда
 EXPOSE 8000

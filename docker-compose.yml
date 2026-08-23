@@ -5,14 +5,8 @@ services:
       dockerfile: Dockerfile
     container_name: finflow-backend
     restart: unless-stopped
-    volumes:
-      # Сохранение базы данных SQLite на хост-машине
-      - ./database:/app/database
-    environment:
-      - APP_NAME=FinFlow
-      - APP_VERSION=0.1.0
-      - DEBUG=False
-      - DATABASE_URL=sqlite+aiosqlite:///./database/app.db
+    env_file:
+      - .env
     networks:
       - finflow-network
     expose:
