@@ -1,3 +1,5 @@
+from urllib.parse import quote_plus
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,7 +25,9 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Формирование асинхронной строки подключения postgresql+asyncpg"""
-        auth = f"{self.user}:{self.password}" if self.password else self.user
+        encoded_user = quote_plus(self.user)
+        encoded_password = quote_plus(self.password) if self.password else ""
+        auth = f"{encoded_user}:{encoded_password}" if encoded_password else encoded_user
         return f"postgresql+asyncpg://{auth}@{self.host}:{self.port}/{self.database}"
 
 
