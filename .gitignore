@@ -45,3 +45,8 @@ wheels/
 # Logs
 *.log
 logs/
+
+# Database backups
+backups/
+*.dump
+*.sql.gz
