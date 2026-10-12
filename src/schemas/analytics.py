@@ -27,6 +27,8 @@ class SummaryMetrics(BaseModel):
     savings_rate: Decimal = Field(default=Decimal("0.00"))
     avg_daily_expense: Decimal = Field(default=Decimal("0.00"))
     max_expense_operation: Optional[OperationMinimal] = None
+    total_transfers: Decimal = Field(default=Decimal("0.00"), description="Сумма внутренних переводов за период")
+    transfers_count: int = Field(default=0, description="Количество переводов за период")
 
 
 class Comparisons(BaseModel):
@@ -37,10 +39,11 @@ class Comparisons(BaseModel):
 
 
 class TimelinePoint(BaseModel):
-    """Точка на графике доходов и расходов по дням"""
+    """Точка на графике доходов, расходов и переводов по дням"""
     date: dt_date
     income: Decimal = Field(default=Decimal("0.00"))
     expense: Decimal = Field(default=Decimal("0.00"))
+    transfers: Decimal = Field(default=Decimal("0.00"))
 
 
 class CategoryGroup(BaseModel):

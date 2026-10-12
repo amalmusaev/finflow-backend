@@ -10,9 +10,11 @@ from src.services.accounts import AccountService
 from src.services.categories import CategoryService
 from src.services.operations import OperationService
 from src.services.analytics import AnalyticsService
+from src.services.transfers import TransferService
 from src.schemas.accounts import AccountCreate
 from src.schemas.categories import CategoryCreate
 from src.schemas.operations import OperationCreate
+from src.schemas.transfers import TransferCreate, CashWithdrawalCreate
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -130,6 +132,60 @@ async def get_analytics_summary(start_date: dt_date, end_date: dt_date, account_
         summary = await service.get_summary(start_date, end_date, account_id)
         # model_dump with mode="json" converts all Decimal/UUID/Date objects to strings for easy JSON serialization
         return summary.model_dump(mode="json")
+
+@mcp.tool()
+async def create_transfer(transfer_in: TransferCreate) -> dict[str, Any]:
+    """Создать перевод между двумя счетами (с автоматической корректировкой балансов)."""
+    async with get_mcp_session() as session:
+        service = TransferService(session)
+        t = await service.create_transfer(transfer_in)
+        return {
+            "id": str(t.id),
+            "from_account_id": str(t.from_account_id),
+            "to_account_id": str(t.to_account_id),
+            "amount": float(t.amount),
+            "to_amount": float(t.to_amount),
+            "fee": float(t.fee),
+            "date": t.date.isoformat(),
+            "description": t.description,
+        }
+
+@mcp.tool()
+async def create_cash_withdrawal(cash_in: CashWithdrawalCreate) -> dict[str, Any]:
+    """Снять наличные (обналичивание: с карты/банка в наличные с автоматическим поиском или созданием счета 'Наличные')."""
+    async with get_mcp_session() as session:
+        service = TransferService(session)
+        t = await service.create_cash_withdrawal(cash_in)
+        return {
+            "id": str(t.id),
+            "from_account_id": str(t.from_account_id),
+            "to_account_id": str(t.to_account_id),
+            "amount": float(t.amount),
+            "to_amount": float(t.to_amount),
+            "fee": float(t.fee),
+            "date": t.date.isoformat(),
+            "description": t.description,
+        }
+
+@mcp.tool()
+async def get_transfers(limit: int = 100, account_id: UUID | None = None) -> list[dict[str, Any]]:
+    """Получить список переводов между счетами."""
+    async with get_mcp_session() as session:
+        service = TransferService(session)
+        transfers = await service.get_transfers(limit=limit, account_id=account_id)
+        return [
+            {
+                "id": str(t.id),
+                "from_account_id": str(t.from_account_id),
+                "to_account_id": str(t.to_account_id),
+                "amount": float(t.amount),
+                "to_amount": float(t.to_amount),
+                "fee": float(t.fee),
+                "date": t.date.isoformat(),
+                "description": t.description,
+            }
+            for t in transfers
+        ]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

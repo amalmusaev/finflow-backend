@@ -4,11 +4,12 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import Depends
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.db import get_db
 from src.models.operation import Operation
+from src.models.transfer import Transfer
 from src.schemas.analytics import (
     AnalyticsSummaryResponse,
     CategoryGroup,
@@ -47,6 +48,20 @@ class AnalyticsService:
             
         result = await self.session.execute(query.order_by(Operation.date))
         operations = result.scalars().all()
+
+        # Query current period transfers
+        transfers_query = select(Transfer).where(
+            Transfer.date >= start_date,
+            Transfer.date <= end_date,
+        )
+        if account_id:
+            transfers_query = transfers_query.where(
+                or_(Transfer.from_account_id == account_id, Transfer.to_account_id == account_id)
+            )
+        transfers_result = await self.session.execute(transfers_query)
+        transfers = transfers_result.scalars().all()
+        total_transfers = sum((t.amount for t in transfers), Decimal("0.00"))
+        transfers_count = len(transfers)
         
         # Query previous period operations
         prev_query = select(Operation).where(
@@ -59,7 +74,7 @@ class AnalyticsService:
         prev_result = await self.session.execute(prev_query)
         prev_operations = prev_result.scalars().all()
         
-        # Calculate current period metrics
+        # Calculate current period metrics (переводы не входят в доходы/расходы)
         total_income = sum((op.amount for op in operations if op.type == OperationType.INCOME), Decimal("0.00"))
         total_expense = sum((op.amount for op in operations if op.type == OperationType.EXPENSE), Decimal("0.00"))
         net_flow = total_income - total_expense
@@ -107,7 +122,12 @@ class AnalyticsService:
         # Pre-fill timeline with all dates in range to ensure continuous chart
         curr_date = start_date
         while curr_date <= end_date:
-            timeline_dict[curr_date] = TimelinePoint(date=curr_date, income=Decimal("0.00"), expense=Decimal("0.00"))
+            timeline_dict[curr_date] = TimelinePoint(
+                date=curr_date,
+                income=Decimal("0.00"),
+                expense=Decimal("0.00"),
+                transfers=Decimal("0.00"),
+            )
             curr_date += timedelta(days=1)
             
         for op in operations:
@@ -115,6 +135,10 @@ class AnalyticsService:
                 timeline_dict[op.date].income += op.amount
             elif op.type == OperationType.EXPENSE:
                 timeline_dict[op.date].expense += op.amount
+
+        for t in transfers:
+            if t.date in timeline_dict:
+                timeline_dict[t.date].transfers += t.amount
                 
         timeline = sorted(timeline_dict.values(), key=lambda x: x.date)
         
@@ -149,6 +173,8 @@ class AnalyticsService:
                 savings_rate=round(savings_rate, 2),
                 avg_daily_expense=round(avg_daily_expense, 2),
                 max_expense_operation=max_expense_op,
+                total_transfers=total_transfers,
+                transfers_count=transfers_count,
             ),
             comparisons=Comparisons(
                 has_previous_period=has_prev_period,

@@ -30,6 +30,11 @@ class OperationNotFoundError(EntityNotFoundError):
         super().__init__("Операция", operation_id)
 
 
+class TransferNotFoundError(EntityNotFoundError):
+    def __init__(self, transfer_id: UUID | str) -> None:
+        super().__init__("Перевод", transfer_id)
+
+
 class ValidationError(FinFlowError):
     """Исключение бизнес-валидации"""
     pass
