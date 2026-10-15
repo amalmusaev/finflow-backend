@@ -17,18 +17,27 @@ class Settings(BaseSettings):
 
     # Параметры подключения к PostgreSQL
     host: str = "localhost"
-    port: int = 5432
+    port: int = 6543
+    session_port: int = 5432
     database: str = "postgres"
     user: str = "postgres"
     password: str = ""
 
-    @property
-    def database_url(self) -> str:
-        """Формирование асинхронной строки подключения postgresql+asyncpg"""
+    def _build_db_url(self, port: int) -> str:
         encoded_user = quote_plus(self.user)
         encoded_password = quote_plus(self.password) if self.password else ""
         auth = f"{encoded_user}:{encoded_password}" if encoded_password else encoded_user
-        return f"postgresql+asyncpg://{auth}@{self.host}:{self.port}/{self.database}"
+        return f"postgresql+asyncpg://{auth}@{self.host}:{port}/{self.database}"
+
+    @property
+    def database_url(self) -> str:
+        """Формирование асинхронной строки подключения postgresql+asyncpg (Transaction Pooler)"""
+        return self._build_db_url(self.port)
+
+    @property
+    def session_database_url(self) -> str:
+        """Формирование асинхронной строки подключения для миграций Alembic (Session Pooler)"""
+        return self._build_db_url(self.session_port)
 
 
 settings = Settings()

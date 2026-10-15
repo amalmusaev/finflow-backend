@@ -10,12 +10,15 @@ from sqlalchemy.orm import DeclarativeBase
 
 from src.core.config import settings
 
-# Создание асинхронного движка SQLAlchemy для PostgreSQL
+# Создание асинхронного движка SQLAlchemy для PostgreSQL (Transaction Mode)
 engine = create_async_engine(
     settings.database_url,
     echo=settings.debug,
     future=True,
     pool_pre_ping=True,
+    connect_args={
+        "statement_cache_size": 0,
+    },
 )
 
 # Фабрика асинхронных сессий

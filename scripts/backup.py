@@ -28,14 +28,14 @@ try:
     from src.core.config import settings
 
     DEFAULT_HOST = settings.host
-    DEFAULT_PORT = settings.port
+    DEFAULT_PORT = getattr(settings, "session_port", settings.port)
     DEFAULT_DB = settings.database
     DEFAULT_USER = settings.user
     DEFAULT_PASSWORD = settings.password
 except Exception:
     # Фолбэк на переменные окружения напрямую
     DEFAULT_HOST = os.getenv("HOST", "localhost")
-    DEFAULT_PORT = int(os.getenv("PORT", "5432"))
+    DEFAULT_PORT = int(os.getenv("SESSION_PORT", os.getenv("PORT", "5432")))
     DEFAULT_DB = os.getenv("DATABASE", "postgres")
     DEFAULT_USER = os.getenv("USER", "postgres")
     DEFAULT_PASSWORD = os.getenv("PASSWORD", "")
