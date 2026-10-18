@@ -16,8 +16,13 @@ engine = create_async_engine(
     echo=settings.debug,
     future=True,
     pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=10,
+    pool_recycle=300,
+    pool_timeout=45,
     connect_args={
         "statement_cache_size": 0,
+        "timeout": 30,
     },
 )
 
